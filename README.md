@@ -30,6 +30,10 @@ width="800px"></p>
 
 ## Important news if you are already using Demucs
 
+- 13/04/2020: **Demucs released under MIT**: We are happy to release Demucs under the MIT licence.
+    We hope that this will broaden the impact of this research to new applications.
+- 13/04/2020: **New quantized models**: New quantized 8 bit models, 4 times smaller and with
+    limited impact on quality. To use them, pass `-Q` to the `demucs.separate` command.
 - 31/01/2020: **You will need to re-download pre-trained models**. Due to an incompatiblity with Pytorch 1.4.0, the pre-trained models could not be loaded
 with it. I have replaced all the pre-trained models using a more future proof serialization. It means
 that you will get an error if you update the repo saying that the previously downloaded checkpoints
@@ -80,6 +84,7 @@ If you have anaconda installed, you can run from the root of this repository:
 
 This will create a `demucs` environment with all the dependencies installed.
 
+
 ### Using Windows
 
 If you are using Windows, replace `python3` by `python.exe` in all the commands provided hereafter :)
@@ -103,16 +108,18 @@ The separated files will be under `C:\Users\YOUR_USERNAME\demucs\separated\demuc
 ```bash
 cd %HOMEPATH%
 cd demucs
+conda activate demucs
 python.exe -m demucs.separate -d cpu --dl "PATH_TO_AUDIO_FILE_1" ...
 ```
 
-If you have an error saying that `mkl_intel_thread.dll` cannot be found, you can try to first run `set CONDA_DLL_SEARCH_MODIFICATION_ENABLE=1` and hopefully it will work 🙏.
+If you have an error saying that `mkl_intel_thread.dll` cannot be found, you can try to first run
+`conda install -c defaults intel-openmp -f`. Then try again to run the `demucs.separate` command. If it still doesn't work, you can try to run first `set CONDA_DLL_SEARCH_MODIFICATION_ENABLE=1`, then again the `demucs.separate` command and hopefully it will work 🙏.
 If you get a permission error, please try starting the Anaconda Prompt as administrator.
 
 [install]: https://www.anaconda.com/distribution/#windows
 [prompt]: https://docs.anaconda.com/anaconda/user-guide/getting-started/#open-prompt-win
 
-## Using Mac OS X
+### Using Mac OS X
 
 If you do not already have Anaconda installed or much experience with the terminal on Mac OS X here are some detailed instructions:
 
@@ -132,9 +139,10 @@ You can drag the .mp3 file to the console and it will paste the mp3 path.
 To later reuse Demucs, simply start again the Anaconda Prompt and run
 ```bash
 cd ~/demucs
+conda activate demucs
 python3 -m demucs.separate --dl -n demucs -d cpu PATH_TO_AUDIO_FILE_1
 ```
-
+**If thats fails:**, replace `python3` by `python`.
 
 ## Separating tracks
 
@@ -142,6 +150,8 @@ In order to try Demucs or Conv-Tasnet on your tracks, simply run from the root o
 
 ```bash
 python3 -m demucs.separate --dl -n demucs PATH_TO_AUDIO_FILE_1 [PATH_TO_AUDIO_FILE_2 ...] # for Demucs
+python3 -m demucs.separate --dl -n demucs --mp3 PATH_TO_AUDIO_FILE_1  # output files saved as MP3
+python3 -m demucs.separate --dl -n demucs -Q PATH_TO_AUDIO_FILE_1 # Use quantized models (smaller download, slightly worse quality)
 python3 -m demucs.separate --dl -n tasnet PATH_TO_AUDIO_FILE_1 ... # for Conv-Tasnet
 # Demucs with randomized equivariant stabilization (10x slower, suitable for GPU, 0.2 extra SDR)
 python3 -m demucs.separate --dl -n demucs --shifts=10 PATH_TO_AUDIO_FILE_1
@@ -158,6 +168,9 @@ Those folders will be placed in `./separated/MODEL_NAME`.
 Any stereo audio file supported by ffmpeg will work. It will be resampled to 44.1 kHz on the fly
 if necessary. If multiple streams (i.e. a stems file) are present in the audio file,
 the first one will be used.
+The output will be a wave file, either in int16 format or float32 (if `--float32` is passed).
+If you want to export as MP3 (at 320 kb/s), first install `lameenc` (on Windows `python.exe -m pip install -U lameenc`, 
+on Linux/OSX `python3 -m pip install -U lameenc`, and use the `--mp3` flag.
 
 Other pre-trained models can be selected with the `-n` flag and downloaded with the `--dl` flag.
 The models will be stored in the `models` folder. The list of pre-trained models is:
@@ -167,6 +180,11 @@ The models will be stored in the `models` folder. The list of pre-trained models
 - `light_extra`: Demucs trained with extra training data with `--channels=64`,
 - `tasnet`: Conv-Tasnet trained on MusDB,
 - `tasnet_extra`: Conv-Tasnet trained with extra training data.
+
+
+For the `demucs*` and `light*` models, 8 bit quantized version are available.
+The model is 4 times smaller but quality might be a bit worse, especially for the `other`
+and `vocals` sources. Just add `-Q` to the command line to use them.
 
 
 The `--shifts=SHIFTS` performs multiple predictions with random shifts (a.k.a randomized
@@ -179,7 +197,7 @@ It is deactivated by default.
 
 ### Memory requirements for GPU acceleration
 
-If you want to use GPU acceleration, you will need at least 8GB of RAM on your GPU for `demucs` and 4GB for `tasnet`. Sorry, the code for demucs is not super optimized for memory! I'll publish soon a lighter version of the model that should run with less RAM. IF you do not have enough memory on your GPU, simply add `-d cpu` to the command line to use the CPU. With Demucs, processing time should be roughly equal to the duration of the track.
+If you want to use GPU acceleration, you will need at least 8GB of RAM on your GPU for `demucs` and 4GB for `tasnet`. Sorry, the code for demucs is not super optimized for memory! If you do not have enough memory on your GPU, simply add `-d cpu` to the command line to use the CPU. With Demucs, processing time should be roughly equal to the duration of the track.
 
 
 ## Examining the results from the paper experiments
@@ -305,19 +323,17 @@ export DEMUCS_MUSDB=PATH TO MUSDB
 ## How to cite
 
 ```
-@techreport{music_separation_waveform,
-  title = {{Music Source Separation in the Waveform Domain}},
-  author = {D{\'e}fossez, Alexandre and Usunier, Nicolas and Bottou, L{\'e}on and Bach, Francis},
-  year = {2019},
-  number = {02379796v1},
-  institution = {HAL},
+@article{defossez2019music,
+  title={Music Source Separation in the Waveform Domain},
+  author={D{\'e}fossez, Alexandre and Usunier, Nicolas and Bottou, L{\'e}on and Bach, Francis},
+  journal={arXiv preprint arXiv:1911.13254},
+  year={2019}
 }
 ```
 
 ## License
 
-Demucs is released under Creative Commons Attribution-NonCommercial 4.0 International
-(CC BY-NC 4.0) license, as found in the [LICENSE](LICENSE) file.
+Demucs is released under the MIT license as found in the [LICENSE](LICENSE) file.
 
 The file `demucs/tasnet.py` is adapted from the [kaituoxu/Conv-TasNet][tasnet] repository.
 It was originally released under the MIT License updated to support multiple audio channels.
