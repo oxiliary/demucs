@@ -18,3 +18,5 @@ dependencies:
     - museval==0.3.0
     - requests==2.22
     - treetable==0.2.3
+    - fastapi==0.61.1
+    - python-multipart==0.0.5
