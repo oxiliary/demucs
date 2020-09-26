@@ -1,2 +1,6 @@
 shredder_venv
 separated
+baselines
+__pycache
+.vscode
+results
