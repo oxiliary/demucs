@@ -7,7 +7,7 @@ EXPOSE 80
 
 COPY . .
 
-RUN pip install -r demucs-requirements.txt
+RUN pip install -r docker-requirements.txt
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
