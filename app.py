@@ -1,6 +1,8 @@
 import os
 import shutil
 import subprocess
+import random
+from os.path import basename
 from zipfile import ZipFile
 
 from fastapi import FastAPI, File, UploadFile, BackgroundTasks
@@ -11,41 +13,35 @@ app = FastAPI()
 
 def cleanup(file, name):
     """Remove files generated from request."""
-    os.remove('sources-{}.zip'.format(name))
+    os.remove('sources-{}.zip'.format(file))
     os.remove('ready/{}'.format(file))
     shutil.rmtree('separated')
-
-
-def get_source_paths(directory):
-    """Gather bass, vocals, drums, and other."""
-    file_paths = []
-    for root, directories, files in os.walk(directory):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            file_paths.append(filepath)
-    return file_paths
 
 
 @app.post("/uploadfiles/")
 async def create_upload_files(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     """"Entrypoint for source separation."""
+    name = file.filename
+    file.filename = str(random.getrandbits(32))+'.mp3'
     upload_folder = open(os.path.join('ready/', file.filename), 'wb+')
     shutil.copyfileobj(file.file, upload_folder)
     upload_folder.close()
     subprocess.call(
         ['python -m demucs.separate {}/ready/{} --dl -n demucs_extra -d cpu'.format(os.getcwd(), file.filename)], shell=True)
 
-    name = file.filename.replace('.mp3', '')
-
-    source_paths = get_source_paths('separated/demucs_extra/{}'.format(name))
-
-    with ZipFile('sources-{}.zip'.format(name), 'w') as zip:
-        for source in source_paths:
-            zip.write(source)
+    with ZipFile('sources-{}.zip'.format(file.filename), 'w') as zip:
+        zip.write('separated/demucs_extra/{}/bass.wav'.format(file.filename.replace('.mp3', '')),
+                  basename('separated/demucs_extra/{}/bass.wav'.format(file.filename.replace('.mp3', ''))))
+        zip.write('separated/demucs_extra/{}/drums.wav'.format(file.filename.replace('.mp3', '')),
+                  basename('separated/demucs_extra/{}/drums.wav'.format(file.filename.replace('.mp3', ''))))
+        zip.write('separated/demucs_extra/{}/other.wav'.format(file.filename.replace('.mp3', '')),
+                  basename('separated/demucs_extra/{}/other.wav'.format(file.filename.replace('.mp3', ''))))
+        zip.write('separated/demucs_extra/{}/vocals.wav'.format(file.filename.replace('.mp3', '')),
+                  basename('separated/demucs_extra/{}/vocals.wav'.format(file.filename.replace('.mp3', ''))))
 
     background_tasks.add_task(cleanup, file.filename, name)
 
-    return FileResponse('sources-{}.zip'.format(name), media_type='application/zip', filename='sources-{}.zip'.format(name))
+    return FileResponse('sources-{}.zip'.format(file.filename), media_type='application/zip', filename='sources-{}.zip'.format(name))
 
 
 @app.get("/")
