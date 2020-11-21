@@ -23,11 +23,13 @@ async def create_upload_files(background_tasks: BackgroundTasks, file: UploadFil
     """"Entrypoint for source separation."""
     name = file.filename
     file.filename = str(random.getrandbits(32))+'.mp3'
+    if not os.path.exists('ready/'):
+        os.makedirs('ready/')
     upload_folder = open(os.path.join('ready/', file.filename), 'wb+')
     shutil.copyfileobj(file.file, upload_folder)
     upload_folder.close()
     subprocess.call(
-        ['python -m demucs.separate {}/ready/{} --dl -n demucs_extra -d cpu'.format(os.getcwd(), file.filename)], shell=True)
+        ['python3 -m demucs.separate {}/ready/{} --dl -n demucs_extra -d cpu'.format(os.getcwd(), file.filename)], shell=True)
 
     with ZipFile('sources-{}.zip'.format(file.filename), 'w') as zip:
         zip.write('separated/demucs_extra/{}/bass.wav'.format(file.filename.replace('.mp3', '')),
